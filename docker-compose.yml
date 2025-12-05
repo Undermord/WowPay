@@ -36,6 +36,8 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:rw  # Логи на хосте
     logging:
       driver: "json-file"
       options:

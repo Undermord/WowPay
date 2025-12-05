@@ -11,6 +11,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"tgwow/internal/config"
 	"tgwow/internal/handlers"
+	"tgwow/internal/logger"
 	"tgwow/internal/storage"
 )
 
@@ -50,6 +51,18 @@ func setupBotCommands(bot *tgbotapi.BotAPI, adminChatIDs []int64) error {
 }
 
 func main() {
+	// Инициализируем логирование в файл + stdout
+	if err := logger.Init(); err != nil {
+		log.Printf("Warning: Failed to init file logging: %v", err)
+		log.Println("Continuing with stdout only...")
+	} else {
+		defer logger.Close()
+		// Проверяем ротацию при старте (без фоновой проверки)
+		if err := logger.CheckAndRotate(); err != nil {
+			log.Printf("Warning: Failed to rotate logs: %v", err)
+		}
+	}
+
 	log.Println("Starting WoW Subscription Bot...")
 
 	cfg, err := config.Load()
