@@ -8,12 +8,6 @@
 .env.local
 .env.*.local
 
-# Ignore documentation
-README.md
-CLAUDE.md
-DEPLOYMENT.md
-*.md
-
 # Ignore Docker files
 Dockerfile
 docker-compose.yml
