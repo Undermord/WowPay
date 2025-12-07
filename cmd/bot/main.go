@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -14,6 +15,33 @@ import (
 	"tgwow/internal/logger"
 	"tgwow/internal/storage"
 )
+
+// waitForDB пытается подключиться к БД с retry логикой
+// Использует экспоненциальный backoff: 1s, 2s, 3s, 4s, 5s
+func waitForDB(databaseURL string, maxRetries int) (*storage.PostgresStorage, error) {
+	var db *storage.PostgresStorage
+	var err error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		db, err = storage.NewPostgresStorage(ctx, databaseURL)
+		cancel()
+
+		if err == nil {
+			log.Println("Database connected successfully")
+			return db, nil
+		}
+
+		if attempt < maxRetries {
+			waitTime := time.Duration(attempt) * time.Second
+			log.Printf("Database not ready (attempt %d/%d): %v. Retrying in %v...",
+				attempt, maxRetries, err, waitTime)
+			time.Sleep(waitTime)
+		}
+	}
+
+	return nil, fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err)
+}
 
 // setupBotCommands configures the bot command menu for users and admins
 func setupBotCommands(bot *tgbotapi.BotAPI, adminChatIDs []int64) error {
@@ -70,17 +98,12 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Wait for database to be ready
-	time.Sleep(3 * time.Second)
-
-	ctx := context.Background()
-	db, err := storage.NewPostgresStorage(ctx, cfg.DatabaseURL)
+	// Wait for database to be ready with retry logic
+	db, err := waitForDB(cfg.DatabaseURL, 5)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
-
-	log.Println("Database connected successfully")
 
 	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
