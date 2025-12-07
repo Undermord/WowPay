@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"tgwow/internal/fsm"
@@ -47,12 +48,17 @@ func (h *Handler) HandleMessage(msg *tgbotapi.Message) {
 
 	// Сохраняем/обновляем пользователя в БД для рассылок
 	go func() {
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
 		username := msg.From.UserName
 		if username == "" {
 			username = msg.From.FirstName
 		}
-		h.storage.UpsertUser(ctx, msg.From.ID, username, msg.From.FirstName, msg.From.LastName)
+
+		if err := h.storage.UpsertUser(ctx, msg.From.ID, username, msg.From.FirstName, msg.From.LastName); err != nil {
+			log.Printf("Warning: Failed to upsert user %d: %v", msg.From.ID, err)
+		}
 	}()
 
 	// Проверяем, находится ли пользователь в состоянии FSM
@@ -101,12 +107,17 @@ func (h *Handler) HandleCallback(query *tgbotapi.CallbackQuery) {
 
 	// Сохраняем/обновляем пользователя в БД для рассылок
 	go func() {
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
 		username := query.From.UserName
 		if username == "" {
 			username = query.From.FirstName
 		}
-		h.storage.UpsertUser(ctx, query.From.ID, username, query.From.FirstName, query.From.LastName)
+
+		if err := h.storage.UpsertUser(ctx, query.From.ID, username, query.From.FirstName, query.From.LastName); err != nil {
+			log.Printf("Warning: Failed to upsert user %d: %v", query.From.ID, err)
+		}
 	}()
 
 	// Обрабатываем специальные случаи без разделителя

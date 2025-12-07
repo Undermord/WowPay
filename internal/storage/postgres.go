@@ -2,8 +2,9 @@ package storage
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -38,11 +39,20 @@ func (s *PostgresStorage) Close() {
 
 // generateOrderID генерирует короткий номер заказа формата: WOW + YYMMDD + 3 цифры
 // Пример: WOW241204123
+// Использует crypto/rand для криптографически стойкой генерации случайных чисел
 func generateOrderID() string {
 	now := time.Now()
 	dateStr := now.Format("060102") // YYMMDD
-	randomNum := rand.Intn(1000)    // 0-999
-	return fmt.Sprintf("WOW%s%03d", dateStr, randomNum)
+
+	// Генерируем случайное число от 0 до 999 используя crypto/rand
+	randomBig, err := rand.Int(rand.Reader, big.NewInt(1000))
+	if err != nil {
+		// Fallback на timestamp если crypto/rand недоступен (крайне маловероятно)
+		randomNum := now.UnixNano() % 1000
+		return fmt.Sprintf("WOW%s%03d", dateStr, randomNum)
+	}
+
+	return fmt.Sprintf("WOW%s%03d", dateStr, randomBig.Int64())
 }
 
 // ListRegions возвращает все регионы
