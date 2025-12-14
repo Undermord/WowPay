@@ -12,14 +12,11 @@ import (
 
 // isAdmin проверяет, является ли пользователь администратором
 func (h *Handler) isAdmin(userID int64) bool {
-	log.Printf("Checking admin access for user ID: %d, admin list: %v", userID, h.adminChatIDs)
 	for _, adminID := range h.adminChatIDs {
 		if adminID == userID {
-			log.Printf("User %d is admin", userID)
 			return true
 		}
 	}
-	log.Printf("User %d is NOT admin", userID)
 	return false
 }
 
