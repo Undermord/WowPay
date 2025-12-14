@@ -98,6 +98,8 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	log.Printf("Loaded admin IDs: %v", cfg.AdminChatIDs)
+
 	// Wait for database to be ready with retry logic
 	db, err := waitForDB(cfg.DatabaseURL, 5)
 	if err != nil {
