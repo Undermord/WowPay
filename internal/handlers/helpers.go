@@ -25,7 +25,7 @@ func (h *Handler) buildRegionsKeyboard(ctx context.Context) (string, [][]tgbotap
 
 	for _, r := range regions {
 		button := tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("🔥 %s", r.Name),
+			fmt.Sprintf("%s %s", r.Name, getRegionFlag(r.Code)),
 			fmt.Sprintf("%s:%d", CallbackActionRegion, r.ID),
 		)
 		keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{button})
@@ -84,6 +84,20 @@ func getUserDisplayName(user *tgbotapi.User) string {
 		name += " " + user.LastName
 	}
 	return name
+}
+
+// getRegionFlag returns flag emoji for region code
+func getRegionFlag(code string) string {
+	flags := map[string]string{
+		"KZ":  "🇰🇿",
+		"UA":  "🇺🇦",
+		"EU":  "🇪🇺",
+		"TUR": "🇹🇷",
+	}
+	if flag, ok := flags[code]; ok {
+		return flag
+	}
+	return "🌍" // default flag for unknown regions
 }
 
 // checkRateLimit проверяет лимит запросов пользователя

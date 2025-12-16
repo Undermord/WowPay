@@ -77,7 +77,7 @@ func (h *Handler) handleProducts(msg *tgbotapi.Message) {
 
 	for _, r := range regions {
 		button := tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("🔥 %s", r.Name),
+			fmt.Sprintf("%s %s", r.Name, getRegionFlag(r.Code)),
 			fmt.Sprintf("region:%d", r.ID),
 		)
 		keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{button})

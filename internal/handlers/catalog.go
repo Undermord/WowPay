@@ -37,7 +37,7 @@ func (h *Handler) handleShowProductsCallback(query *tgbotapi.CallbackQuery) {
 
 	for _, r := range regions {
 		button := tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("🔥 %s", r.Name),
+			fmt.Sprintf("%s %s", r.Name, getRegionFlag(r.Code)),
 			fmt.Sprintf("region:%d", r.ID),
 		)
 		keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{button})
@@ -82,7 +82,7 @@ func (h *Handler) handleRegionSelection(query *tgbotapi.CallbackQuery, regionID 
 		return
 	}
 
-	text := fmt.Sprintf("🔥 <b>%s</b>\n\nВыберите категорию:", region.Name)
+	text := fmt.Sprintf("%s <b>%s</b>\n\nВыберите категорию:", getRegionFlag(region.Code), region.Name)
 
 	var keyboard [][]tgbotapi.InlineKeyboardButton
 
@@ -138,7 +138,7 @@ func (h *Handler) handleCategorySelection(query *tgbotapi.CallbackQuery, categor
 		return
 	}
 
-	text := fmt.Sprintf("🔥 %s → 📁 <b>%s</b>\n\n", region.Name, category.Name)
+	text := fmt.Sprintf("%s %s → 📁 <b>%s</b>\n\n", region.Name, getRegionFlag(region.Code), category.Name)
 
 	if category.Description != "" {
 		text += fmt.Sprintf("📝 %s\n\n", category.Description)
@@ -336,7 +336,7 @@ func (h *Handler) handleBackToRegions(query *tgbotapi.CallbackQuery) {
 
 	for _, r := range regions {
 		button := tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("🔥 %s", r.Name),
+			fmt.Sprintf("%s %s", r.Name, getRegionFlag(r.Code)),
 			fmt.Sprintf("region:%d", r.ID),
 		)
 		keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{button})

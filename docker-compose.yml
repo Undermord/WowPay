@@ -4,7 +4,7 @@ services:
     container_name: wowbot-db
     environment:
       POSTGRES_USER: wowbot
-      POSTGRES_PASSWORD: wowbot123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wowbot123}
       POSTGRES_DB: wowbot
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -30,7 +30,7 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       ADMIN_CHAT_ID: ${ADMIN_CHAT_ID}
-      DATABASE_URL: postgres://wowbot:wowbot123@db:5432/wowbot?sslmode=disable
+      DATABASE_URL: ${DATABASE_URL}
       PAYMENT_CARD_NUMBER: ${PAYMENT_CARD_NUMBER}
     depends_on:
       db:

@@ -192,7 +192,7 @@ func (h *Handler) handleAdminProducts(query *tgbotapi.CallbackQuery) {
 	for _, region := range regions {
 		categories := categoriesByRegion[region.ID]
 
-		text += fmt.Sprintf("🔥 <b>%s</b>\n", region.Name)
+		text += fmt.Sprintf("%s <b>%s</b>\n", getRegionFlag(region.Code), region.Name)
 
 		for _, category := range categories {
 			products := productsByCategory[category.ID]
@@ -276,14 +276,14 @@ func (h *Handler) handleAdminEditProduct(query *tgbotapi.CallbackQuery, productI
 
 	text := fmt.Sprintf(
 		"📦 <b>Редактирование товара</b>\n\n"+
-			"🔥 <b>Регион:</b> %s\n"+
+			"%s <b>Регион:</b> %s\n"+
 			"📁 <b>Категория:</b> %s\n"+
 			"🏷 <b>Название:</b> %s\n"+
 			"💰 <b>Цена:</b> %.2f руб.\n"+
 			"👁 <b>Статус:</b> %s\n"+
 			"🆔 <b>ID:</b> %d\n\n"+
 			"📝 <b>Описание:</b>\n%s",
-		region.Name, category.Name, product.Name, product.Price, visibilityStatus, product.ID, product.Description,
+		getRegionFlag(region.Code), region.Name, category.Name, product.Name, product.Price, visibilityStatus, product.ID, product.Description,
 	)
 
 	toggleText := "Скрыть товар"
