@@ -49,7 +49,7 @@ func (h *Handler) buildProductCard(product *models.Product, backCallback string)
 	}
 
 	text := fmt.Sprintf(
-		"🎮 <b>%s</b>\n\n%s📝 <b>Описание:</b>\n%s\n\nНажмите кнопку ниже для оформления заказа:",
+		"🎮 <b>%s</b>\n\n%s📝 <b>Описание:</b>\n%s",
 		product.Name, priceText, product.Description,
 	)
 

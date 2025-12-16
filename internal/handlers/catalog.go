@@ -207,8 +207,7 @@ func (h *Handler) handleProductSelection(query *tgbotapi.CallbackQuery, productI
 	text := fmt.Sprintf(
 		"🎮 <b>%s</b>\n\n"+
 			"%s"+
-			"📝 <b>Описание:</b>\n%s\n\n"+
-			"Нажмите кнопку ниже для оформления заказа:",
+			"📝 <b>Описание:</b>\n%s",
 		product.Name, priceText, product.Description,
 	)
 
@@ -275,8 +274,7 @@ func (h *Handler) handleChangeRegion(query *tgbotapi.CallbackQuery) {
 	text := fmt.Sprintf(
 		"🔄 <b>%s</b>\n\n"+
 			"%s"+
-			"📝 <b>Описание:</b>\n%s\n\n"+
-			"Нажмите кнопку ниже для оформления заказа:",
+			"📝 <b>Описание:</b>\n%s",
 		product.Name, priceText, product.Description,
 	)
 
