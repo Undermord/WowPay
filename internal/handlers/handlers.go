@@ -17,11 +17,11 @@ import (
 type Handler struct {
 	bot               *tgbotapi.BotAPI
 	storage           *storage.PostgresStorage
-	adminChatIDs      []int64                // Список ID администраторов
-	fsmManager        *fsm.Manager           // Менеджер FSM состояний
-	paymentCardNumber string                 // Номер карты для оплаты
-	userLimiter       *ratelimit.Limiter     // Rate limiter для пользователей
-	adminLimiter      *ratelimit.Limiter     // Rate limiter для админов
+	adminChatIDs      []int64            // Список ID администраторов
+	fsmManager        *fsm.Manager       // Менеджер FSM состояний
+	paymentCardNumber string             // Номер карты для оплаты
+	userLimiter       *ratelimit.Limiter // Rate limiter для пользователей
+	adminLimiter      *ratelimit.Limiter // Rate limiter для админов
 }
 
 // NewHandler создает новый Handler
@@ -35,6 +35,26 @@ func NewHandler(bot *tgbotapi.BotAPI, storage *storage.PostgresStorage, adminCha
 		userLimiter:       ratelimit.NewLimiter(ratelimit.DefaultConfig()),
 		adminLimiter:      ratelimit.NewLimiter(ratelimit.AdminConfig()),
 	}
+}
+
+// Shutdown корректно останавливает все фоновые процессы Handler
+func (h *Handler) Shutdown() {
+	log.Println("Shutting down handler resources...")
+
+	// Останавливаем FSM Manager (cleanup goroutine)
+	if h.fsmManager != nil {
+		h.fsmManager.Stop()
+	}
+
+	// Останавливаем rate limiters (cleanup goroutines)
+	if h.userLimiter != nil {
+		h.userLimiter.Stop()
+	}
+	if h.adminLimiter != nil {
+		h.adminLimiter.Stop()
+	}
+
+	log.Println("Handler resources stopped")
 }
 
 // HandleMessage обрабатывает входящие сообщения

@@ -134,15 +134,25 @@ func main() {
 	go func() {
 		<-sigChan
 		log.Println("Received shutdown signal, stopping bot...")
+
+		// Останавливаем обработку обновлений
 		bot.StopReceivingUpdates()
+
+		// Останавливаем фоновые процессы handler
+		h.Shutdown()
+
+		// Даём время завершить горутины
+		time.Sleep(1 * time.Second)
+
+		log.Println("Shutdown complete")
 		os.Exit(0)
 	}()
 
 	log.Println("Bot is running. Press Ctrl+C to stop.")
 
 	for update := range updates {
-		log.Printf("Received update: %+v", update)
-
+		// Обрабатываем обновления без избыточного логирования
+		// Детальное логирование происходит в handlers
 		if update.Message != nil {
 			h.HandleMessage(update.Message)
 		} else if update.CallbackQuery != nil {

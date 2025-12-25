@@ -283,7 +283,9 @@ func (h *Handler) handleBroadcastCancel(query *tgbotapi.CallbackQuery, userState
 
 // executeBroadcast выполняет массовую рассылку
 func (h *Handler) executeBroadcast(broadcastID int, adminChatID int64) {
-	ctx := context.Background()
+	// Используем контекст с таймаутом 2 часа (достаточно для больших рассылок)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
+	defer cancel()
 
 	broadcast, err := h.storage.GetBroadcastByID(ctx, broadcastID)
 	if err != nil {
