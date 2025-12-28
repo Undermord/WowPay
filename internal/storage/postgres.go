@@ -597,6 +597,22 @@ func (s *PostgresStorage) UpdateProduct(ctx context.Context, productID int, name
 	return nil
 }
 
+// UpdateCategory обновляет название и описание категории
+func (s *PostgresStorage) UpdateCategory(ctx context.Context, categoryID int, name string, description string) error {
+	query := `
+		UPDATE categories
+		SET name = $1, description = $2
+		WHERE id = $3
+	`
+
+	_, err := s.pool.Exec(ctx, query, name, description, categoryID)
+	if err != nil {
+		return fmt.Errorf("failed to update category: %w", err)
+	}
+
+	return nil
+}
+
 // ListAllProducts возвращает все товары (включая скрытые) для админа
 func (s *PostgresStorage) ListAllProducts(ctx context.Context) ([]models.Product, error) {
 	query := `

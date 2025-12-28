@@ -121,6 +121,9 @@ func (h *Handler) handleAdmin(msg *tgbotapi.Message) {
 		tgbotapi.NewInlineKeyboardButtonData("🛠 Управление товарами", CallbackActionAdminProducts+":0"),
 	})
 	keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{
+		tgbotapi.NewInlineKeyboardButtonData("📁 Управление категориями", CallbackActionAdminCategories+":0"),
+	})
+	keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardButtonData("✏️ Редактировать приветствие", CallbackActionAdminEditWelcome+":0"),
 	})
 
@@ -375,4 +378,144 @@ func (h *Handler) handleAdminToggleVisibility(query *tgbotapi.CallbackQuery, pro
 
 	// Возвращаемся к редактированию товара с обновленной информацией
 	h.handleAdminEditProduct(query, productID)
+}
+
+// handleAdminCategories показывает список всех категорий для редактирования
+func (h *Handler) handleAdminCategories(query *tgbotapi.CallbackQuery) {
+	if !h.isAdmin(query.From.ID) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), DBContextTimeout)
+	defer cancel()
+
+	// Загружаем регионы и категории
+	regions, err := h.storage.ListRegions(ctx)
+	if err != nil {
+		log.Printf("Error fetching regions: %v", err)
+		h.sendMessage(query.Message.Chat.ID, "❌ Ошибка при загрузке регионов.")
+		return
+	}
+
+	allCategories, err := h.storage.ListAllCategories(ctx)
+	if err != nil {
+		log.Printf("Error fetching categories: %v", err)
+		h.sendMessage(query.Message.Chat.ID, "❌ Ошибка при загрузке категорий.")
+		return
+	}
+
+	// Группируем категории по region_id
+	categoriesByRegion := make(map[int][]models.Category)
+	for _, cat := range allCategories {
+		categoriesByRegion[cat.RegionID] = append(categoriesByRegion[cat.RegionID], cat)
+	}
+
+	text := "📁 <b>Управление категориями</b>\n\n"
+	var keyboard [][]tgbotapi.InlineKeyboardButton
+
+	// Строим UI на основе регионов и категорий
+	for _, region := range regions {
+		categories := categoriesByRegion[region.ID]
+
+		text += fmt.Sprintf("%s <b>%s</b>\n", getRegionFlag(region.Code), region.Name)
+
+		for _, category := range categories {
+			text += fmt.Sprintf("  📁 %s\n", category.Name)
+
+			// Добавляем кнопку для редактирования категории
+			button := tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("[%s] %s", region.Code, category.Name),
+				fmt.Sprintf("%s:%d", CallbackActionAdminEditCategory, category.ID),
+			)
+			keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{button})
+		}
+		text += "\n"
+	}
+
+	text += "Нажмите на категорию для редактирования"
+
+	// Добавляем кнопку "Назад"
+	keyboard = append(keyboard, []tgbotapi.InlineKeyboardButton{
+		tgbotapi.NewInlineKeyboardButtonData("◀️ Назад к админке", CallbackActionBackToAdmin+":0"),
+	})
+
+	keyboardMarkup := tgbotapi.NewInlineKeyboardMarkup(keyboard...)
+
+	edit := tgbotapi.NewEditMessageText(query.Message.Chat.ID, query.Message.MessageID, text)
+	edit.ParseMode = "HTML"
+	edit.ReplyMarkup = &keyboardMarkup
+
+	if _, err := h.bot.Send(edit); err != nil {
+		log.Printf("Error editing message: %v", err)
+	}
+
+	h.bot.Request(tgbotapi.NewCallback(query.ID, ""))
+}
+
+// handleAdminEditCategory показывает меню редактирования категории
+func (h *Handler) handleAdminEditCategory(query *tgbotapi.CallbackQuery, categoryID int) {
+	if !h.isAdmin(query.From.ID) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), DBContextTimeout)
+	defer cancel()
+
+	// Загружаем категорию и регион
+	category, err := h.storage.GetCategoryByID(ctx, categoryID)
+	if err != nil {
+		log.Printf("Error fetching category: %v", err)
+		h.sendMessage(query.Message.Chat.ID, "❌ Категория не найдена.")
+		return
+	}
+
+	region, err := h.storage.GetRegionByID(ctx, category.RegionID)
+	if err != nil {
+		log.Printf("Error fetching region: %v", err)
+		h.sendMessage(query.Message.Chat.ID, "❌ Регион не найден.")
+		return
+	}
+
+	text := fmt.Sprintf(
+		"📝 <b>Редактирование категории</b>\n\n"+
+			"🌍 <b>Регион:</b> %s %s\n"+
+			"📁 <b>Название:</b> %s\n"+
+			"📝 <b>Описание:</b> %s\n\n"+
+			"Выберите действие:",
+		getRegionFlag(region.Code),
+		region.Name,
+		category.Name,
+		category.Description,
+	)
+
+	keyboard := [][]tgbotapi.InlineKeyboardButton{
+		{
+			tgbotapi.NewInlineKeyboardButtonData(
+				"✏️ Изменить название",
+				fmt.Sprintf("%s:%d", CallbackActionAdminEditCatName, categoryID),
+			),
+		},
+		{
+			tgbotapi.NewInlineKeyboardButtonData(
+				"📝 Изменить описание",
+				fmt.Sprintf("%s:%d", CallbackActionAdminEditCatDesc, categoryID),
+			),
+		},
+		{
+			tgbotapi.NewInlineKeyboardButtonData(
+				"◀️ Назад к категориям",
+				CallbackActionAdminCategories+":0",
+			),
+		},
+	}
+
+	edit := tgbotapi.NewEditMessageText(query.Message.Chat.ID, query.Message.MessageID, text)
+	edit.ParseMode = "HTML"
+	edit.ReplyMarkup = &tgbotapi.InlineKeyboardMarkup{InlineKeyboard: keyboard}
+
+	if _, err := h.bot.Send(edit); err != nil {
+		log.Printf("Error editing message: %v", err)
+	}
+
+	h.bot.Request(tgbotapi.NewCallback(query.ID, ""))
 }

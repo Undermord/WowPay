@@ -21,6 +21,10 @@ func (h *Handler) handleFSMState(msg *tgbotapi.Message, userState *fsm.UserState
 		h.handleNameInput(msg, userState.ProductID)
 	case fsm.StateWaitingForDesc:
 		h.handleDescInput(msg, userState.ProductID)
+	case fsm.StateWaitingForCategoryName:
+		h.handleCategoryNameInput(msg, userState.CategoryID)
+	case fsm.StateWaitingForCategoryDesc:
+		h.handleCategoryDescInput(msg, userState.CategoryID)
 	case fsm.StateWaitingForWelcomeMsg:
 		h.handleWelcomeMsgInput(msg)
 	case fsm.StateWaitingForBroadcastText:
@@ -315,4 +319,145 @@ func (h *Handler) handleWelcomeMsgInput(msg *tgbotapi.Message) {
 	h.fsmManager.ClearState(msg.From.ID)
 
 	log.Printf("Welcome message updated by admin %d", msg.From.ID)
+}
+
+// handleAdminStartEditCatName начинает диалог изменения названия категории
+func (h *Handler) handleAdminStartEditCatName(query *tgbotapi.CallbackQuery, categoryID int) {
+	if !h.isAdmin(query.From.ID) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), DBContextTimeout)
+	defer cancel()
+
+	category, err := h.storage.GetCategoryByID(ctx, categoryID)
+	if err != nil {
+		log.Printf("Error fetching category: %v", err)
+		return
+	}
+
+	// Устанавливаем состояние FSM для категории
+	h.fsmManager.SetCategoryState(query.From.ID, fsm.StateWaitingForCategoryName, categoryID)
+
+	text := fmt.Sprintf(
+		"✏️ <b>Изменение названия категории</b>\n\n"+
+			"Категория: <b>%s</b>\n"+
+			"Текущее название: %s\n\n"+
+			"Введите новое название категории\n\n"+
+			"Для отмены используйте /cancel",
+		category.Name, category.Name,
+	)
+
+	msg := tgbotapi.NewMessage(query.Message.Chat.ID, text)
+	msg.ParseMode = "HTML"
+	h.bot.Send(msg)
+}
+
+// handleAdminStartEditCatDesc начинает диалог изменения описания категории
+func (h *Handler) handleAdminStartEditCatDesc(query *tgbotapi.CallbackQuery, categoryID int) {
+	if !h.isAdmin(query.From.ID) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), DBContextTimeout)
+	defer cancel()
+
+	category, err := h.storage.GetCategoryByID(ctx, categoryID)
+	if err != nil {
+		log.Printf("Error fetching category: %v", err)
+		return
+	}
+
+	// Устанавливаем состояние FSM для категории
+	h.fsmManager.SetCategoryState(query.From.ID, fsm.StateWaitingForCategoryDesc, categoryID)
+
+	text := fmt.Sprintf(
+		"📝 <b>Изменение описания категории</b>\n\n"+
+			"Категория: <b>%s</b>\n"+
+			"Текущее описание: %s\n\n"+
+			"Введите новое описание категории\n\n"+
+			"Для отмены используйте /cancel",
+		category.Name, category.Description,
+	)
+
+	msg := tgbotapi.NewMessage(query.Message.Chat.ID, text)
+	msg.ParseMode = "HTML"
+	h.bot.Send(msg)
+}
+
+// handleCategoryNameInput обрабатывает ввод нового названия категории
+func (h *Handler) handleCategoryNameInput(msg *tgbotapi.Message, categoryID int) {
+	newName := strings.TrimSpace(msg.Text)
+
+	// Валидация названия
+	if len(newName) < 3 {
+		h.sendMessage(msg.Chat.ID, "❌ Название должно содержать минимум 3 символа")
+		return
+	}
+
+	if len(newName) > 100 {
+		h.sendMessage(msg.Chat.ID, "❌ Название слишком длинное (максимум 100 символов)")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), DBContextTimeout)
+	defer cancel()
+
+	// Получаем текущую категорию для сохранения описания
+	category, err := h.storage.GetCategoryByID(ctx, categoryID)
+	if err != nil {
+		log.Printf("Error fetching category: %v", err)
+		h.sendMessage(msg.Chat.ID, "❌ Ошибка при получении категории")
+		h.fsmManager.ClearState(msg.From.ID)
+		return
+	}
+
+	// Обновляем категорию
+	if err := h.storage.UpdateCategory(ctx, categoryID, newName, category.Description); err != nil {
+		log.Printf("Error updating category name: %v", err)
+		h.sendMessage(msg.Chat.ID, "❌ Ошибка при обновлении названия")
+		h.fsmManager.ClearState(msg.From.ID)
+		return
+	}
+
+	h.sendMessage(msg.Chat.ID, "✅ Название категории успешно обновлено!")
+	h.fsmManager.ClearState(msg.From.ID)
+
+	log.Printf("Category %d name updated to '%s' by admin %d", categoryID, newName, msg.From.ID)
+}
+
+// handleCategoryDescInput обрабатывает ввод нового описания категории
+func (h *Handler) handleCategoryDescInput(msg *tgbotapi.Message, categoryID int) {
+	newDesc := strings.TrimSpace(msg.Text)
+
+	// Валидация описания
+	if len(newDesc) > 500 {
+		h.sendMessage(msg.Chat.ID, "❌ Описание слишком длинное (максимум 500 символов)")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), DBContextTimeout)
+	defer cancel()
+
+	// Получаем текущую категорию для сохранения названия
+	category, err := h.storage.GetCategoryByID(ctx, categoryID)
+	if err != nil {
+		log.Printf("Error fetching category: %v", err)
+		h.sendMessage(msg.Chat.ID, "❌ Ошибка при получении категории")
+		h.fsmManager.ClearState(msg.From.ID)
+		return
+	}
+
+	// Обновляем категорию
+	if err := h.storage.UpdateCategory(ctx, categoryID, category.Name, newDesc); err != nil {
+		log.Printf("Error updating category description: %v", err)
+		h.sendMessage(msg.Chat.ID, "❌ Ошибка при обновлении описания")
+		h.fsmManager.ClearState(msg.From.ID)
+		return
+	}
+
+	h.sendMessage(msg.Chat.ID, "✅ Описание категории успешно обновлено!")
+	h.fsmManager.ClearState(msg.From.ID)
+
+	log.Printf("Category %d description updated by admin %d", categoryID, msg.From.ID)
 }

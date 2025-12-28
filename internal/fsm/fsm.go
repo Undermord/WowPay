@@ -9,12 +9,13 @@ import (
 type State string
 
 const (
-	StateNone                   State = ""
-	StateWaitingForPrice        State = "waiting_for_price"
-	StateWaitingForName         State = "waiting_for_name"
-	StateWaitingForDesc         State = "waiting_for_description"
-	StateWaitingForCategoryDesc State = "waiting_for_category_description"
-	StateWaitingForWelcomeMsg   State = "waiting_for_welcome_message"
+	StateNone                    State = ""
+	StateWaitingForPrice         State = "waiting_for_price"
+	StateWaitingForName          State = "waiting_for_name"
+	StateWaitingForDesc          State = "waiting_for_description"
+	StateWaitingForCategoryName  State = "waiting_for_category_name"
+	StateWaitingForCategoryDesc  State = "waiting_for_category_description"
+	StateWaitingForWelcomeMsg    State = "waiting_for_welcome_message"
 	// Broadcast FSM states
 	StateWaitingForBroadcastText  State = "waiting_for_broadcast_text"
 	StateWaitingForBroadcastPhoto State = "waiting_for_broadcast_photo"

@@ -273,6 +273,33 @@ func (h *Handler) HandleCallback(query *tgbotapi.CallbackQuery) {
 			h.handleBroadcastCancel(query, userState)
 		}
 
+	case "admin_categories":
+		h.handleAdminCategories(query)
+
+	case "admin_edit_category":
+		categoryID, err := strconv.Atoi(value)
+		if err != nil {
+			log.Printf("Invalid category ID: %v", err)
+			return
+		}
+		h.handleAdminEditCategory(query, categoryID)
+
+	case "admin_edit_cat_name":
+		categoryID, err := strconv.Atoi(value)
+		if err != nil {
+			log.Printf("Invalid category ID: %v", err)
+			return
+		}
+		h.handleAdminStartEditCatName(query, categoryID)
+
+	case "admin_edit_cat_desc":
+		categoryID, err := strconv.Atoi(value)
+		if err != nil {
+			log.Printf("Invalid category ID: %v", err)
+			return
+		}
+		h.handleAdminStartEditCatDesc(query, categoryID)
+
 	case "back_to_admin":
 		fakeMsg := &tgbotapi.Message{
 			Chat: &tgbotapi.Chat{ID: query.Message.Chat.ID},
